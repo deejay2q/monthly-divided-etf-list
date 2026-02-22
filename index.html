@@ -413,8 +413,19 @@
     .filter-btn { font-size: 11px; padding: 4px 9px; }
     .sort-select { font-size: 11px; width: 100%; }
 
-    /* ── stats bar ── */
-    .stats-bar { padding: 8px 14px; gap: 10px; }
+    /* ── stats bar: 2열 그리드로 ── */
+    .stats-bar {
+      padding: 8px 14px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px 4px;
+      overflow-x: visible;
+    }
+    /* 구분자(|) 숨김 */
+    .stats-bar .stat-item:nth-child(2),
+    .stats-bar .stat-item:nth-child(4),
+    .stats-bar .stat-item:nth-child(6) { display: none; }
+    .stat-item { font-size: 12px; gap: 4px; }
 
     /* ── result count ── */
     .result-count { padding: 6px 14px 0; }
@@ -436,15 +447,15 @@
     /* 두 테이블 모두 고정 너비로 가로 스크롤 */
     .head-table,
     #etfTable {
-      min-width: 700px;
+      min-width: 660px;
       table-layout: fixed;
     }
 
-    /* 종목명 컬럼 sticky (두 번째 테이블이 따로 있으므로 thead/tbody 각각 적용) */
+    /* 종목명 컬럼 sticky */
     .head-table th:nth-child(3),
     #etfTable td:nth-child(3) {
       position: sticky;
-      left: 132px; /* #(44) + 코드(88) */
+      left: 108px; /* #(36) + 코드(72) */
       z-index: 2;
       background: var(--surface);
     }
@@ -464,21 +475,27 @@
     .head-table th:nth-child(2),
     #etfTable td:nth-child(2) {
       position: sticky;
-      left: 44px;
+      left: 36px;
       z-index: 2;
       background: var(--surface);
     }
     #etfTable tbody tr:hover td:nth-child(2) { background: var(--surface2); }
 
-    /* 종목명 너비 축소 */
+    /* # 컬럼 너비 축소, 종목코드 너비 축소 */
+    .head-table colgroup col:nth-child(1),
+    #etfTable colgroup col:nth-child(1) { width: 36px !important; }
+    .head-table colgroup col:nth-child(2),
+    #etfTable colgroup col:nth-child(2) { width: 72px !important; }
+
+    /* 종목명 너비 */
     .head-table colgroup col:nth-child(3),
     #etfTable colgroup col:nth-child(3) {
       width: 160px !important;
     }
 
-    .name-text { font-size: 12px; }
-    td { padding: 8px 8px; }
-    .head-table th { padding: 8px 8px; font-size: 10px; }
+    .name-text { font-size: 12px; white-space: normal; word-break: keep-all; }
+    td { padding: 8px 6px; }
+    .head-table th { padding: 8px 6px; font-size: 10px; }
   }
 </style>
 </head>
