@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>월배당 ETF 대시보드</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --surface2: #1c2330;
+    --border: #30363d;
+    --text: #e6edf3;
+    --text-muted: #8b949e;
+    --blue: #58a6ff;
+    --green: #3fb950;
+    --red: #f85149;
+    --orange: #e07b00;
+    --purple: #bc8cff;
+    --yellow: #d29922;
+    --accent: #1f6feb;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 13px;
+    min-height: 100vh;
+  }
+
+  /* ── sticky 상단 래퍼 ── */
+  #sticky-top {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: var(--bg);
+  }
+
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .header-icon {
+    width: 32px; height: 32px;
+    background: linear-gradient(135deg, #1f6feb, #388bfd);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+  }
+
+  h1 {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .badge-date {
+    background: var(--accent);
+    color: #fff;
+    border-radius: 20px;
+    padding: 4px 14px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+
+  .total-count {
+    color: var(--text-muted);
+    font-size: 12px;
+  }
+
+  .last-updated {
+    font-size: 11px;
+    color: var(--text-muted);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 4px 10px;
+  }
+
+  .controls {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 24px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .legend {
+    display: flex;
+    gap: 16px;
+    margin-right: 8px;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .legend-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+  }
+
+  .dot-end { background: var(--orange); }
+  .dot-mid { background: var(--blue); }
+  .dot-none { background: #555; }
+
+  .search-wrap {
+    position: relative;
+    flex: 1;
+    min-width: 200px;
+    max-width: 320px;
+  }
+
+  .search-icon {
+    position: absolute;
+    left: 10px; top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    font-size: 14px;
+  }
+
+  input[type=text] {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    padding: 7px 12px 7px 32px;
+    font-family: inherit;
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  input[type=text]:focus { border-color: var(--accent); }
+
+  .filter-group {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .filter-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text-muted);
+    padding: 5px 12px;
+    font-size: 12px;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+
+  .filter-btn:hover { border-color: var(--blue); color: var(--blue); }
+  .filter-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  .sort-select {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    padding: 6px 10px;
+    font-size: 12px;
+    font-family: inherit;
+    cursor: pointer;
+    outline: none;
+  }
+
+  .stats-bar {
+    display: flex;
+    gap: 16px;
+    padding: 10px 24px;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+  }
+
+  .stat-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+    font-size: 12px;
+  }
+
+  .stat-label { color: var(--text-muted); }
+  .stat-value { font-weight: 600; }
+
+  /* ── 고정 thead 테이블 ── */
+  .table-head-wrap {
+    background: var(--surface);
+    border-bottom: 2px solid var(--border);
+    overflow: hidden;
+    padding: 0 24px;
+  }
+
+  .head-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+  }
+
+  .head-table th {
+    background: var(--surface);
+    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 10px 12px;
+    white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+    transition: color 0.15s;
+  }
+
+  .head-table th:hover { color: var(--blue); }
+  .head-table th.sort-asc::after { content: ' ↑'; color: var(--blue); }
+  .head-table th.sort-desc::after { content: ' ↓'; color: var(--blue); }
+
+
+
+  .table-wrap {
+    overflow-x: auto;
+    padding: 0 24px 40px;
+  }
+
+  #etfTable {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+  }
+
+  tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: background 0.1s;
+  }
+
+  tbody tr:hover { background: var(--surface2); }
+
+  td {
+    padding: 10px 12px;
+    vertical-align: middle;
+  }
+
+  .td-num {
+    color: var(--text-muted);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    width: 40px;
+  }
+
+  .td-code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--blue);
+    width: 80px;
+  }
+
+  .td-name {
+    max-width: 280px;
+  }
+
+  .name-row {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .name-text {
+    font-weight: 500;
+    font-size: 13px;
+    line-height: 1.3;
+  }
+
+  .name-end { color: var(--orange); }
+  .name-mid { color: var(--blue); }
+  .name-none { color: var(--text-muted); }
+
+  .tags {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+  }
+
+  .tag {
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  .tag-100 { background: rgba(248,81,73,0.15); color: #f85149; border: 1px solid rgba(248,81,73,0.3); }
+  .tag-70  { background: rgba(88,166,255,0.12); color: #58a6ff; border: 1px solid rgba(88,166,255,0.25); }
+  .tag-ira { background: rgba(188,140,255,0.12); color: #bc8cff; border: 1px solid rgba(188,140,255,0.25); }
+
+  .td-price {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    font-weight: 600;
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  .td-date {
+    font-size: 12px;
+    color: var(--text-muted);
+    white-space: nowrap;
+  }
+
+  .td-money {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  .td-pct {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  .pos { color: var(--green); }
+  .neg { color: var(--red); }
+  .neu { color: var(--text-muted); }
+
+  .no-result {
+    text-align: center;
+    padding: 60px;
+    color: var(--text-muted);
+    font-size: 14px;
+  }
+
+  .result-count {
+    font-size: 12px;
+    color: var(--text-muted);
+    padding: 8px 24px 0;
+  }
+
+  @media (max-width: 768px) {
+    header { padding: 12px 16px; }
+    .controls { padding: 10px 16px; }
+    .table-wrap { padding: 0 8px 40px; }
+    .stats-bar { padding: 8px 16px; }
+    .result-count { padding: 8px 16px 0; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ★ 상단 전체를 하나의 sticky 블록으로 묶음 -->
+<div id="sticky-top">
+
+  <header>
+    <div class="header-left">
+      <div class="header-icon">📅</div>
+      <h1>월배당 ETF</h1>
+    </div>
+    <div class="header-right">
+      <span class="total-count" id="totalCount">총 60개 종목</span>
+      <span class="badge-date" id="refDate">2026년 2월 22일</span>
+      <span class="last-updated" id="lastUpdated">마지막 업데이트: 2026-02-22</span>
+    </div>
+  </header>
+
+  <div class="controls">
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot dot-end"></div>월말배당 (배당일 15일 이하 · 주황색)</div>
+      <div class="legend-item"><div class="legend-dot dot-mid"></div>월중배당 (배당일 16일 이상 · 파란색)</div>
+      <div class="legend-item"><div class="legend-dot dot-none"></div>정보없음</div>
+    </div>
+
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="searchInput" placeholder="종목코드 또는 종목명 검색...">
+    </div>
+
+    <div class="filter-group">
+      <button class="filter-btn active" data-filter="dividend" data-value="all">전체</button>
+      <button class="filter-btn" data-filter="dividend" data-value="mid">월중배당</button>
+      <button class="filter-btn" data-filter="dividend" data-value="end">월말배당</button>
+    </div>
+
+    <div class="filter-group">
+      <button class="filter-btn active" data-filter="pension" data-value="all">연금전체</button>
+      <button class="filter-btn" data-filter="pension" data-value="100">퇴직연금100%</button>
+      <button class="filter-btn" data-filter="pension" data-value="70">퇴직연금70%</button>
+      <button class="filter-btn" data-filter="pension" data-value="ira">개인연금</button>
+    </div>
+
+    <select class="sort-select" id="sortSelect">
+      <option value="rank">순위순</option>
+      <option value="yield1y_desc">1년 분배율 높은순</option>
+      <option value="yield1y_asc">1년 분배율 낮은순</option>
+      <option value="ret3m_desc">3개월 수익률 높은순</option>
+      <option value="ret3m_asc">3개월 수익률 낮은순</option>
+      <option value="recentYield_desc">최근 분배율 높은순</option>
+      <option value="price_desc">종가 높은순</option>
+      <option value="price_asc">종가 낮은순</option>
+    </select>
+  </div>
+
+  <div class="stats-bar">
+    <div class="stat-item"><span class="stat-label">필터된 종목</span><span class="stat-value" id="filteredCount" style="color:var(--blue)">60</span></div>
+    <div class="stat-item"><span class="stat-label">|</span></div>
+    <div class="stat-item"><span class="stat-label">평균 1년분배율</span><span class="stat-value pos" id="avgYield">-</span></div>
+    <div class="stat-item"><span class="stat-label">|</span></div>
+    <div class="stat-item"><span class="stat-label">최고 1년분배율</span><span class="stat-value pos" id="maxYield">-</span></div>
+    <div class="stat-item"><span class="stat-label">|</span></div>
+    <div class="stat-item"><span class="stat-label">평균 3개월수익률</span><span class="stat-value" id="avgRet3m">-</span></div>
+  </div>
+
+  <div class="result-count" id="resultCount"></div>
+
+  <!-- thead도 sticky 블록 안으로 이동 -->
+  <div class="table-head-wrap">
+    <table class="head-table">
+      <colgroup>
+        <col style="width:44px">
+        <col style="width:88px">
+        <col>
+        <col style="width:110px">
+        <col style="width:110px">
+        <col style="width:100px">
+        <col style="width:100px">
+        <col style="width:100px">
+        <col style="width:110px">
+      </colgroup>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>종목코드</th>
+          <th>종목명</th>
+          <th data-sort="price" style="text-align:right">종가</th>
+          <th data-sort="date">실제배당일</th>
+          <th data-sort="recentDiv" style="text-align:right">최근 분배금</th>
+          <th data-sort="recentYield" style="text-align:right">최근 분배율</th>
+          <th data-sort="yield1y" style="text-align:right">1년 분배율</th>
+          <th data-sort="ret3m" style="text-align:right">3개월 수익률</th>
+        </tr>
+      </thead>
+    </table>
+  </div>
+
+</div><!-- /sticky-top -->
+
+<!-- tbody는 sticky 블록 밖 -->
+<div class="table-wrap">
+  <table id="etfTable">
+    <colgroup>
+      <col style="width:44px">
+      <col style="width:88px">
+      <col>
+      <col style="width:110px">
+      <col style="width:110px">
+      <col style="width:100px">
+      <col style="width:100px">
+      <col style="width:100px">
+      <col style="width:110px">
+    </colgroup>
+    <tbody id="tableBody"></tbody>
+  </table>
+  <div class="no-result" id="noResult" style="display:none">검색 결과가 없습니다.</div>
+</div>
+
+<script>
+// ── 데이터 ──────────────────────────────────────────────
+// dividendType: 'mid'=월중(배당일 15일 이후), 'end'=월말(배당일 15일 이전), 'none'=정보없음
+// pension: 배열 - '100','70','ira' 조합
+
+const ETF_DATA = [
+  {rank:1,  code:'0040Y0', name:'SOL 발란티어커버드콜OTM채권혼합',           price:9040,   date:'2026-02-02', recentDiv:194, recentYield:2.15, yield1y:21.35, ret3m:-9.33,  pension:['100','ira']},
+  {rank:2,  code:'491620', name:'RISE 미국테크100데일리고정커버드콜',          price:10435,  date:'2026-02-03', recentDiv:137, recentYield:1.31, yield1y:20.32, ret3m:-4.4,   pension:['70','ira']},
+  {rank:3,  code:'494300', name:'KODEX 미국나스닥100데일리커버드콜OTM',        price:9780,   date:'2026-02-03', recentDiv:167, recentYield:1.71, yield1y:19.68, ret3m:-2.1,   pension:['70','ira']},
+  {rank:4,  code:'490590', name:'RISE 미국AI밸류체인데일리고정커버드콜',       price:12660,  date:'2026-02-03', recentDiv:168, recentYield:1.33, yield1y:18.71, ret3m:-1.71,  pension:['70','ira']},
+  {rank:5,  code:'0040X0', name:'SOL 발란티어미국체커버드콜혼합',              price:10335,  date:'2026-02-02', recentDiv:225, recentYield:2.18, yield1y:16.69, ret3m:-10.75, pension:['100','ira']},
+  {rank:6,  code:'489030', name:'PLUS 고배당주위클리커버드콜',                 price:10580,  date:'2026-02-03', recentDiv:136, recentYield:1.29, yield1y:16.37, ret3m:15.19,  pension:['ira']},
+  {rank:7,  code:'490600', name:'RISE 미국배당100데일리고정커버드콜',          price:9485,   date:'2026-02-03', recentDiv:99,  recentYield:1.04, yield1y:16.35, ret3m:8.03,   pension:['70','ira']},
+  {rank:8,  code:'475080', name:'KODEX 테슬라커버드콜채권혼합액티브',          price:8805,   date:'2026-02-03', recentDiv:112, recentYield:1.27, yield1y:15.2,  ret3m:-3.08,  pension:['100','ira']},
+  {rank:9,  code:'480030', name:'ACE 미국500데일리타겟커버드콜(합성)',          price:10410,  date:'2026-02-20', recentDiv:134, recentYield:1.29, yield1y:14.93, ret3m:-1.47,  pension:['70','ira']},
+  {rank:10, code:'486290', name:'TIGER 미국나스닥100타겟데일리리커버드콜',     price:10255,  date:'2026-02-03', recentDiv:134, recentYield:1.31, yield1y:14.78, ret3m:-2.1,   pension:['70']},
+  {rank:11, code:'480020', name:'ACE 미국빅테크7+데일리타겟커버드콜(합성)',    price:11830,  date:'2026-02-20', recentDiv:154, recentYield:1.3,  yield1y:14.54, ret3m:-5.36,  pension:['70','ira']},
+  {rank:12, code:'493810', name:'TIGER 미국AI빅테크10타겟데일리리커버드콜',   price:11305,  date:'2026-02-20', recentDiv:148, recentYield:1.31, yield1y:14.48, ret3m:-4.76,  pension:['70','ira']},
+  {rank:13, code:'483280', name:'KODEX 미국AI테크TOP10타겟커버드콜',           price:11905,  date:'2026-02-03', recentDiv:159, recentYield:1.34, yield1y:14.31, ret3m:-4.91,  pension:['70','ira']},
+  {rank:14, code:'0013R0', name:'RISE 테슬라미국타겟커버드콜혼합(합성)',       price:9610,   date:'2026-02-03', recentDiv:125, recentYield:1.3,  yield1y:14.2,  ret3m:-3.61,  pension:['70','ira']},
+  {rank:15, code:'0005A0', name:'KODEX 미국S&P500데일리리커버드콜OTM',        price:9690,   date:'2026-02-03', recentDiv:123, recentYield:1.27, yield1y:14.17, ret3m:-0.36,  pension:['70','ira']},
+  {rank:16, code:'473330', name:'SOL 미국30년국채커버드콜(합성)',               price:9355,   date:'2026-02-02', recentDiv:75,  recentYield:0.8,  yield1y:13.86, ret3m:-3.11,  pension:['100','ira']},
+  {rank:17, code:'494420', name:'PLUS 미국배당증가성장주데일리커버드콜',        price:9600,   date:'2026-02-20', recentDiv:100, recentYield:1.04, yield1y:13.46, ret3m:0.21,   pension:['70','ira']},
+  {rank:18, code:'475720', name:'RISE 200위클리커버드콜',                       price:13440,  date:'2026-02-03', recentDiv:180, recentYield:1.34, yield1y:12.86, ret3m:29.23,  pension:['70','ira']},
+  {rank:19, code:'481060', name:'KODEX 미국30년국채타겟커버드콜(합성 H)',       price:8330,   date:'2026-02-20', recentDiv:83,  recentYield:1.0,  yield1y:12.67, ret3m:-1.83,  pension:['100','ira']},
+  {rank:20, code:'476550', name:'TIGER 미국30년국채커버드콜액티브(H)',          price:7735,   date:'2026-02-03', recentDiv:77,  recentYield:1.0,  yield1y:12.53, ret3m:-2.27,  pension:['100','ira']},
+  {rank:21, code:'472150', name:'TIGER 배당커버드콜액티브',                     price:18220,  date:'2026-02-03', recentDiv:320, recentYield:1.76, yield1y:12.22, ret3m:43.92,  pension:['70','ira']},
+  {rank:22, code:'472830', name:'RISE 미국30년국채커버드콜(합성)',               price:9270,   date:'2026-02-03', recentDiv:80,  recentYield:0.86, yield1y:11.78, ret3m:-2.93,  pension:['100','ira']},
+  {rank:23, code:'0000D0', name:'TIGER 엔비디아미국채커버드콜밸런스(합성)',     price:9980,   date:'2026-02-03', recentDiv:99,  recentYield:0.99, yield1y:11.68, ret3m:-2.49,  pension:['70','ira']},
+  {rank:24, code:'494210', name:'SOL 미국500타겟데일리커버드콜액티브',          price:10825,  date:'2026-02-02', recentDiv:111, recentYield:1.03, yield1y:11.66, ret3m:0.19,   pension:['70','ira']},
+  {rank:25, code:'441680', name:'TIGER 미국나스닥100커버드콜(합성)',             price:10940,  date:'2026-02-03', recentDiv:112, recentYield:1.02, yield1y:11.62, ret3m:0.6,    pension:['70','ira']},
+  {rank:26, code:'498410', name:'KODEX 금융고배당TOP10타겟위클리커버드콜',      price:15420,  date:'2026-02-03', recentDiv:155, recentYield:1.01, yield1y:11.31, ret3m:25.77,  pension:['70','ira']},
+  {rank:27, code:'480040', name:'ACE 미국반도체데일리타겟커버드콜(합성)',        price:14060,  date:'2026-02-20', recentDiv:176, recentYield:1.25, yield1y:11.1,  ret3m:23.66,  pension:['70','ira']},
+  {rank:28, code:'0008S0', name:'TIGER 미국배당다우존스타겟데일리리커버드콜',   price:10145,  date:'2026-02-20', recentDiv:102, recentYield:1.01, yield1y:10.78, ret3m:13.86,  pension:['70','ira']},
+  {rank:29, code:'498400', name:'KODEX 200타겟위클리커버드콜',                  price:18265,  date:'2026-02-20', recentDiv:244, recentYield:1.34, yield1y:10.76, ret3m:44.27,  pension:['70','ira']},
+  {rank:30, code:'483290', name:'KODEX 미국배당다우존스타겟커버드콜',           price:10715,  date:'2026-02-03', recentDiv:98,  recentYield:0.91, yield1y:10.64, ret3m:14.17,  pension:['70','ira']},
+  {rank:31, code:'474220', name:'TIGER 미국테크TOP10타겟커버드콜',              price:14755,  date:'2026-02-20', recentDiv:129, recentYield:0.87, yield1y:9.69,  ret3m:-6.02,  pension:['70','ira']},
+  {rank:32, code:'0018C0', name:'PLUS 고배당주위클리리고정커버드콜',            price:15170,  date:'2026-02-20', recentDiv:173, recentYield:1.14, yield1y:9.67,  ret3m:30.83,  pension:['70','ira']},
+  {rank:33, code:'482730', name:'TIGER 미국S&P500타겟데일리리커버드콜',        price:11720,  date:'2026-02-03', recentDiv:100, recentYield:0.85, yield1y:9.56,  ret3m:0.26,   pension:['70','ira']},
+  {rank:34, code:'458760', name:'TIGER 미국배당다우존스타겟커버드콜2호',        price:11215,  date:'2026-02-03', recentDiv:88,  recentYield:0.78, yield1y:9.37,  ret3m:14.26,  pension:['70','ira']},
+  {rank:35, code:'290080', name:'RISE 200고배당커버드콜ATM',                    price:8640,   date:'2026-02-03', recentDiv:75,  recentYield:0.87, yield1y:9.16,  ret3m:-1.71,  pension:['ira']},
+  {rank:36, code:'441640', name:'KODEX 미국배당커버드콜액티브',                 price:12895,  date:'2026-02-20', recentDiv:99,  recentYield:0.77, yield1y:8.75,  ret3m:3.66,   pension:['70','ira']},
+  {rank:37, code:'329200', name:'TIGER 리츠부동산인프라',                       price:4625,   date:'2026-02-03', recentDiv:33,  recentYield:0.71, yield1y:8.74,  ret3m:4.99,   pension:['70','ira']},
+  {rank:38, code:'476800', name:'KODEX 한국부동산리츠인프라',                   price:4925,   date:'2026-02-20', recentDiv:29,  recentYield:0.59, yield1y:8.39,  ret3m:2.93,   pension:['70','ira']},
+  {rank:39, code:'289480', name:'TIGER 200커버드콜',                            price:10150,  date:'2026-02-03', recentDiv:70,  recentYield:0.69, yield1y:7.44,  ret3m:14.69,  pension:['70','ira']},
+  {rank:40, code:'0073X0', name:'FOCUS 알리바바미국채커버드콜혼합',             price:11175,  date:'2026-02-03', recentDiv:116, recentYield:1.04, yield1y:7.0,   ret3m:-3.71,  pension:['70','ira']},
+  {rank:41, code:'429740', name:'PLUS K리츠',                                   price:7145,   date:'2026-02-03', recentDiv:40,  recentYield:0.56, yield1y:6.93,  ret3m:3.03,   pension:['70','ira']},
+  {rank:42, code:'487950', name:'KODEX 대만테크고배당다우존스',                 price:10525,  date:'2026-02-03', recentDiv:63,  recentYield:0.6,  yield1y:6.67,  ret3m:4.41,   pension:['70','ira']},
+  {rank:43, code:'455660', name:'ACE 미국하이일드액티브(H)',                    price:9795,   date:'2026-02-03', recentDiv:54,  recentYield:0.55, yield1y:6.63,  ret3m:0.05,   pension:['70','ira']},
+  {rank:44, code:'468380', name:'KODEX iShares미국하이일드액티브',              price:11720,  date:'2026-02-03', recentDiv:73,  recentYield:0.62, yield1y:6.46,  ret3m:-1.22,  pension:['70','ira']},
+  {rank:45, code:'460960', name:'ACE 글로벌인컴TOP10',                          price:11845,  date:'2026-02-03', recentDiv:64,  recentYield:0.54, yield1y:6.28,  ret3m:2.2,    pension:['ira']},
+  {rank:46, code:'341850', name:'TIGER 리츠부동산인프라채권',                   price:4995,   date:'2026-02-03', recentDiv:24,  recentYield:0.48, yield1y:5.91,  ret3m:3.42,   pension:['ira']},
+  {rank:47, code:'352540', name:'KODEX 일본부동산리츠(H)',                      price:12720,  date:'2026-02-03', recentDiv:60,  recentYield:0.47, yield1y:5.77,  ret3m:-0.55,  pension:['70','ira']},
+  {rank:48, code:'480460', name:'WON 한국부동산TOP3플러스',                     price:10465,  date:'2026-02-03', recentDiv:50,  recentYield:0.48, yield1y:5.73,  ret3m:5.81,   pension:['70','ira']},
+  {rank:49, code:'458750', name:'TIGER 미국배당다우존스타겟커버드콜1호',        price:12925,  date:'2026-02-20', recentDiv:62,  recentYield:0.48, yield1y:5.59,  ret3m:15.82,  pension:['70','ira']},
+  {rank:50, code:'0094L0', name:'RISE 차이나테크TOP10위클리타겟커버드콜',       price:9225,   date:'2026-02-03', recentDiv:101, recentYield:1.09, yield1y:5.43,  ret3m:-10.04, pension:['70','ira']},
+  {rank:51, code:'0049M0', name:'ACE 미국배당밸리티+커버드콜액티브',            price:11590,  date:'2026-02-03', recentDiv:69,  recentYield:0.6,  yield1y:4.89,  ret3m:2.7,    pension:['70','ira']},
+  {rank:52, code:'484790', name:'KODEX 미국30년국채액티브(H)',                  price:9050,   date:'2026-02-03', recentDiv:37,  recentYield:0.41, yield1y:4.86,  ret3m:-0.28,  pension:['100','ira']},
+  {rank:53, code:'316300', name:'ACE 싱가포르리츠',                             price:14840,  date:'2026-02-03', recentDiv:57,  recentYield:0.38, yield1y:4.8,   ret3m:1.68,   pension:['70','ira']},
+  {rank:54, code:'458260', name:'TIGER 미국투자등급회사채액티브(H)',             price:49130,  date:'2026-02-03', recentDiv:170, recentYield:0.35, yield1y:4.74,  ret3m:0.24,   pension:['100','ira']},
+  {rank:55, code:'437080', name:'KODEX 미국종합채권ESG액티브(H)',               price:101790, date:'2026-02-03', recentDiv:372, recentYield:0.37, yield1y:4.49,  ret3m:-0.01,  pension:['100','ira']},
+  {rank:56, code:'481340', name:'RISE 미국30년국채액티브',                      price:10065,  date:'2026-02-03', recentDiv:37,  recentYield:0.37, yield1y:4.48,  ret3m:-1.66,  pension:['70','ira']},
+  {rank:57, code:'441800', name:'TIME Korea플러스배당액티브',                   price:29895,  date:'2026-02-03', recentDiv:117, recentYield:0.39, yield1y:4.25,  ret3m:61.42,  pension:['70','ira']},
+  {rank:58, code:'468630', name:'KODEX iShares미국투자등급회사채액티브',        price:11965,  date:'2026-02-03', recentDiv:49,  recentYield:0.41, yield1y:4.1,   ret3m:-0.99,  pension:['100','ira']},
+  {rank:59, code:'497780', name:'KoAct 미국천연가스인프라액티브',               price:11030,  date:'2026-02-03', recentDiv:40,  recentYield:0.36, yield1y:4.05,  ret3m:14.48,  pension:['70','ira']},
+  {rank:60, code:'453850', name:'ACE 미국30년국채액티브(H)',                    price:7815,   date:'2026-02-03', recentDiv:23,  recentYield:0.29, yield1y:3.83,  ret3m:-0.13,  pension:['100','ira']},
+];
+
+// ── 날짜 기준 dividendType 자동 계산 ──────────────────────
+// 실제배당일 기준: 15일 이전 → 월말배당(end), 15일 이후 → 월중배당(mid)
+ETF_DATA.forEach(r => {
+  if (!r.date) { r.dividendType = 'none'; return; }
+  const day = parseInt(r.date.split('-')[2], 10);
+  r.dividendType = day <= 15 ? 'end' : 'mid';
+});
+
+// ── 상태 ──────────────────────────────────────────────
+let filterDividend = 'all';
+let filterPension = 'all';
+let searchQuery = '';
+let sortKey = 'rank';
+let sortDir = 1; // 1=asc, -1=desc
+let currentSortCol = null;
+
+// ── 렌더 ──────────────────────────────────────────────
+function getFilteredData() {
+  let data = [...ETF_DATA];
+
+  // 검색
+  if (searchQuery) {
+    const q = searchQuery.toLowerCase();
+    data = data.filter(r => r.code.toLowerCase().includes(q) || r.name.toLowerCase().includes(q));
+  }
+
+  // 배당 시기 필터
+  if (filterDividend !== 'all') {
+    data = data.filter(r => r.dividendType === filterDividend);
+  }
+
+  // 연금 필터
+  if (filterPension !== 'all') {
+    data = data.filter(r => r.pension.includes(filterPension));
+  }
+
+  // 정렬
+  data.sort((a, b) => {
+    const sortMap = {
+      rank: [a.rank, b.rank, 1],
+      price: [a.price, b.price, sortDir],
+      yield1y_desc: [b.yield1y, a.yield1y, 1],
+      yield1y_asc: [a.yield1y, b.yield1y, 1],
+      ret3m_desc: [b.ret3m, a.ret3m, 1],
+      ret3m_asc: [a.ret3m, b.ret3m, 1],
+      recentYield_desc: [b.recentYield, a.recentYield, 1],
+      price_desc: [b.price, a.price, 1],
+      price_asc: [a.price, b.price, 1],
+    };
+    if (currentSortCol) {
+      const vals = { price: [a.price, b.price], yield1y: [a.yield1y, b.yield1y], ret3m: [a.ret3m, b.ret3m], recentYield: [a.recentYield, b.recentYield], recentDiv: [a.recentDiv, b.recentDiv] };
+      if (vals[currentSortCol]) return (vals[currentSortCol][0] - vals[currentSortCol][1]) * sortDir;
+    }
+    if (sortMap[sortKey]) return (sortMap[sortKey][0] - sortMap[sortKey][1]) * sortMap[sortKey][2];
+    return a.rank - b.rank;
+  });
+
+  return data;
+}
+
+function pctColor(v) {
+  if (v > 0) return 'pos';
+  if (v < 0) return 'neg';
+  return 'neu';
+}
+
+function nameClass(type) {
+  if (type === 'mid') return 'name-mid';
+  if (type === 'end') return 'name-end';
+  return 'name-none';
+}
+
+function renderRow(r, displayRank) {
+  const tags = r.pension.map(p => {
+    if (p === '100') return `<span class="tag tag-100">퇴직100%</span>`;
+    if (p === '70') return `<span class="tag tag-70">퇴직70%</span>`;
+    if (p === 'ira') return `<span class="tag tag-ira">개인연금</span>`;
+    return '';
+  }).join('');
+
+  const pc = pctColor;
+  return `<tr>
+    <td class="td-num">${displayRank}</td>
+    <td class="td-code">${r.code}</td>
+    <td class="td-name">
+      <div class="name-row">
+        <span class="name-text ${nameClass(r.dividendType)}">${r.name}</span>
+        <div class="tags">${tags}</div>
+      </div>
+    </td>
+    <td class="td-price">${r.price.toLocaleString()}원</td>
+    <td class="td-date">${r.date}</td>
+    <td class="td-money">${r.recentDiv.toLocaleString()}원</td>
+    <td class="td-pct ${pc(r.recentYield)}">${r.recentYield.toFixed(2)}%</td>
+    <td class="td-pct ${pc(r.yield1y)}">${r.yield1y.toFixed(2)}%</td>
+    <td class="td-pct ${pc(r.ret3m)}">${r.ret3m.toFixed(2)}%</td>
+  </tr>`;
+}
+
+function updateStats(data) {
+  document.getElementById('filteredCount').textContent = data.length;
+  if (data.length === 0) {
+    document.getElementById('avgYield').textContent = '-';
+    document.getElementById('maxYield').textContent = '-';
+    document.getElementById('avgRet3m').textContent = '-';
+    return;
+  }
+  const avg1y = data.reduce((s, r) => s + r.yield1y, 0) / data.length;
+  const max1y = Math.max(...data.map(r => r.yield1y));
+  const avgRet = data.reduce((s, r) => s + r.ret3m, 0) / data.length;
+  document.getElementById('avgYield').textContent = avg1y.toFixed(2) + '%';
+  document.getElementById('maxYield').textContent = max1y.toFixed(2) + '%';
+  const el = document.getElementById('avgRet3m');
+  el.textContent = avgRet.toFixed(2) + '%';
+  el.className = 'stat-value ' + pctColor(avgRet);
+}
+
+function render() {
+  const data = getFilteredData();
+  const tbody = document.getElementById('tableBody');
+  const noResult = document.getElementById('noResult');
+  const resultCount = document.getElementById('resultCount');
+
+  if (data.length === 0) {
+    tbody.innerHTML = '';
+    noResult.style.display = 'block';
+    resultCount.textContent = '';
+  } else {
+    noResult.style.display = 'none';
+    tbody.innerHTML = data.map((r, i) => renderRow(r, i + 1)).join('');
+    resultCount.textContent = `총 ${data.length}개 종목 표시 중`;
+  }
+  updateStats(data);
+}
+
+// ── 이벤트 ──────────────────────────────────────────────
+document.getElementById('searchInput').addEventListener('input', e => {
+  searchQuery = e.target.value.trim();
+  render();
+});
+
+document.querySelectorAll('[data-filter="dividend"]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    filterDividend = btn.dataset.value;
+    document.querySelectorAll('[data-filter="dividend"]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    render();
+  });
+});
+
+document.querySelectorAll('[data-filter="pension"]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    filterPension = btn.dataset.value;
+    document.querySelectorAll('[data-filter="pension"]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    render();
+  });
+});
+
+document.getElementById('sortSelect').addEventListener('change', e => {
+  sortKey = e.target.value;
+  currentSortCol = null;
+  document.querySelectorAll('.head-table th').forEach(th => th.classList.remove('sort-asc','sort-desc'));
+  render();
+});
+
+document.querySelectorAll('.head-table th[data-sort]').forEach(th => {
+  th.addEventListener('click', () => {
+    const col = th.dataset.sort;
+    if (currentSortCol === col) {
+      sortDir *= -1;
+    } else {
+      currentSortCol = col;
+      sortDir = -1;
+    }
+    document.querySelectorAll('.head-table th').forEach(t => t.classList.remove('sort-asc','sort-desc'));
+    th.classList.add(sortDir === -1 ? 'sort-desc' : 'sort-asc');
+    sortKey = 'custom';
+    render();
+  });
+});
+
+// 초기 렌더
+render();
+</script>
+</body>
+</html>
