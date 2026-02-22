@@ -447,7 +447,7 @@
     /* 두 테이블 모두 고정 너비로 가로 스크롤 */
     .head-table,
     #etfTable {
-      min-width: 660px;
+      min-width: 640px;
       table-layout: fixed;
     }
 
@@ -455,7 +455,7 @@
     .head-table th:nth-child(3),
     #etfTable td:nth-child(3) {
       position: sticky;
-      left: 108px; /* #(36) + 코드(72) */
+      left: 90px; /* #(36) + 코드(54) */
       z-index: 2;
       background: var(--surface);
     }
@@ -481,11 +481,11 @@
     }
     #etfTable tbody tr:hover td:nth-child(2) { background: var(--surface2); }
 
-    /* # 컬럼 너비 축소, 종목코드 너비 축소 */
+    /* # 컬럼 너비 축소, 종목코드 너비 54px */
     .head-table colgroup col:nth-child(1),
     #etfTable colgroup col:nth-child(1) { width: 36px !important; }
     .head-table colgroup col:nth-child(2),
-    #etfTable colgroup col:nth-child(2) { width: 72px !important; }
+    #etfTable colgroup col:nth-child(2) { width: 54px !important; }
 
     /* 종목명 너비 */
     .head-table colgroup col:nth-child(3),
@@ -493,7 +493,7 @@
       width: 160px !important;
     }
 
-    .name-text { font-size: 12px; white-space: normal; word-break: keep-all; }
+    .name-text { font-size: 12px; white-space: normal; word-break: break-all; overflow-wrap: break-word; }
     td { padding: 8px 6px; }
     .head-table th { padding: 8px 6px; font-size: 10px; }
   }
